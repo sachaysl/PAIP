@@ -1,0 +1,3 @@
+
+
+defn dotproduct [a b] (
