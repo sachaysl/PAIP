@@ -1,7 +1,8 @@
                                         ;eliza clojure implementation
 (def single-valued? (complement coll?))
  ; no such thing as atom predicate in clojure (atom means a completely different thing)
- ; collection is essentially the inverse of atom
+ ; collection is essentially the inverse of atom except we must
+ ; also handle () 
 
 (defn simple-equal [x y]
   ; Are x and y equal? (Don't check inside strings.)
@@ -11,6 +12,4 @@
          (simple-equal (rest x) (rest y)))))
 
 
-;(or (single-valued? x) (= () x))
 
-   ;seems like () might be posing a problem
