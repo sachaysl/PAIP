@@ -17,7 +17,6 @@
       
 
 (defn pat-match [pattern input]
-  ;Does pattern match input? WARNING: buggy version.
   (if (variable-p pattern)
      ;the second argument to cons must be a list in clojure
     (if (list? input) (cons pattern input) (cons pattern (list input)))
@@ -37,7 +36,7 @@
  ;Find a (variable value) pair in a binding list
   (assoc1 var bindings))
 
-;assoc behaves differently in clojure to common lisp so have to define it ourselves
+;assoc behaves differently in clojure than in common lisp so have to implement it ourselves
 (defn assoc1 [var bindings]
    (loop [var var
           bindings bindings]
@@ -59,3 +58,24 @@
 (defn extend-bindings [var val bindings]
   ;Add a (var value) pair to a binding list.
   (cons (cons var (list val)) bindings))
+
+(defn pat-match [pattern input & {:keys [bindings] :or {bindings no-bindings}}]
+  ;print bindings
+  ;(pat-match 'hey 'hey :bindings '((?X vacation)))
+  
+  
+(defn pat-match [pattern input]
+  (if (variable-p pattern)
+     ;the second argument to cons must be a list in clojure
+    (cons1 pattern input)
+    (if  (or (atom1 pattern) (atom1 input))
+      (= pattern input)
+      (concat (pat-match (first pattern) (first input))
+           (pat-match (rest pattern) (rest input))))))
+
+(defn atom1 [pattern]
+  (or (single-valued? pattern) (= () pattern)))
+
+(defn cons1 [pattern input]
+  (if (list? input) (cons pattern input) (cons pattern (list input))))
+        
