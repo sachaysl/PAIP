@@ -16,14 +16,14 @@
   (and (symbol? x) (.startsWith (name x) "?")))
       
 
-(defn pat-match [pattern input]
+(defn pat-match0 [pattern input]
   (if (variable-p pattern)
      ;the second argument to cons must be a list in clojure
     (if (list? input) (cons pattern input) (cons pattern (list input)))
     (if  (or (or (single-valued? pattern) (= () pattern)) (or (single-valued? input) (= () input)))
       (= pattern input)
-      (concat (pat-match (first pattern) (first input))
-           (pat-match (rest pattern) (rest input))))))
+      (concat (pat-match0 (first pattern) (first input))
+           (pat-match0 (rest pattern) (rest input))))))
     
 ;(clojure.string/replace '(what would it mean to you if you got a ?X ?) "?X" "vacation") the above is an attempt to find an equaivalent of sublis in clojure. The replace function
 ; works but requires the match and the replacement to be strings.
@@ -59,19 +59,34 @@
   ;Add a (var value) pair to a binding list.
   (cons (cons var (list val)) bindings))
 
-(defn pat-match [pattern input & {:keys [bindings] :or {bindings no-bindings}}]
-  ;print bindings
+(defn pat-match [pattern input bindings];&{:keys [bindings] :or {bindings no-bindings}}]
+  ;print bindings Note, need to make bindings an optional argument here
   ;(pat-match 'hey 'hey :bindings '((?X vacation)))
-  
-  
-(defn pat-match [pattern input]
+  (cond ((= bindings fail) fail)
+        ((variable-p pattern)
+         (match-variable pattern input bindings))
+        ((= pattern input) bindings) ;consp in clojure???? use seq?
+        ((and (seq pattern) (seq input))
+         (pat-match (rest pattern) (rest input)
+                    (pat-match (first pattern) (first input) bindings))
+         (true fail))))
+
+(defn match-variable (var input bindings)
+  ;Does VAR match input? Uses (or updates) and returns bindings.
+  (let [binding (get-binding var bindings)]
+    (cond ((not binding) (extend-bindings var input bindings))
+          ((= input (binding-val binding)) bindings)
+          (true fail))))
+
+         
+(defn pat-match1 [pattern input]
   (if (variable-p pattern)
      ;the second argument to cons must be a list in clojure
     (cons1 pattern input)
     (if  (or (atom1 pattern) (atom1 input))
       (= pattern input)
-      (concat (pat-match (first pattern) (first input))
-           (pat-match (rest pattern) (rest input))))))
+      (concat (pat-match1 (first pattern) (first input))
+           (pat-match1 (rest pattern) (rest input))))))
 
 (defn atom1 [pattern]
   (or (single-valued? pattern) (= () pattern)))
