@@ -88,9 +88,9 @@
 (defn segment-pattern-p [pattern]
  ;is this a segment matching pattern: ((?* var) pat)
  ; check if 'first pattern gives a symbol and the below conditions, else return falseA 
-  (if (symbol? (first pattern))
-    (and (list? pattern) (.startsWith (name (first pattern)) "?*"))
-    false ))
+  (and (list? pattern) (list? (first pattern))
+       (.startsWith (name (first (first pattern))) "?*")))
+   
 
 (defn segment-match [pattern input bindings start]
   ;Match the segment pattern ((?* var) pat) against input
