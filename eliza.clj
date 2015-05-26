@@ -78,10 +78,73 @@
     (= bindings fail) fail
     (variable-p pattern) (match-variable pattern input bindings)
     (= pattern input) bindings
+    (segment-pattern-p pattern) (segment-match pattern input bindings 0) ; ***
     (and (list? pattern) (list? input))
          (pat-match (rest pattern) (rest input)
                     (pat-match (first pattern) (first input) bindings))
          :else fail))
+
+
+(defn segment-pattern-p [pattern]
+ ;is this a segment matching pattern: ((?* var) pat)
+ ; check if 'first pattern gives a symbol and the below conditions, else return falseA 
+  (if (symbol? (first pattern))
+    (and (list? pattern) (.startsWith (name (first pattern)) "?*"))
+    false ))
+
+(defn segment-match [pattern input bindings start]
+  ;Match the segment pattern ((?* var) pat) against input
+  (let [var (second (first pattern))
+        pat (rest pattern)]
+    (if (= pat ()) ;not sure if this is a correct translation of the lisp yet
+      (match-variable var input bindings)
+      ; we assume that pat starts with a constant
+      ; In other words, a pattern can't have two consecutive vars
+      (let [ pos (returnposition (first pat) input start)]
+        (if (false? pos)
+          fail
+          (let [b2 (pat-match pat (subseq1 input pos) bindings)]
+            ;;if this match failed,try another longer one
+            ;;if it worked, check that the variables match
+            (if (= b2 fail)
+              (segment-match pattern input bindings (+ pos 1))
+              (match-variable var (subseq2 input 0 pos) b2))))))))
+
+
+(defn subseq2 [input start end]
+  (loop [input input
+         start start
+         result '()]
+    (if (or (nil? input) (> start end)) false
+        (if (= start end)
+          (reverse result)
+          (recur (seq (rest input))
+                 (+ start 1)
+                 (cons (first input) result))))))  
+
+
+            
+;check if the core clojure function subseq is suitable to replace subseq1
+(defn subseq1 [input pos] 
+  (loop [input input
+         pos pos]
+    (if (nil? input) false
+        (if (= pos 0)
+          input
+          (recur (seq (rest input))
+                 (- pos 1))))))
+                
+
+(defn returnposition [target input searchfrom]
+  (loop [input input
+         pos 0]
+    ;(print pos)
+    (if (nil? input) false
+         (if (and (= (first input) target) (>= pos searchfrom))
+           pos
+           (recur (seq (rest input))
+                  (+ pos 1))))))
+
 (defn match-variable [var input bindings]
   ;Does VAR match input? Uses (or updates) and returns bindings.
   (let [binding (get-binding var bindings)] (print var) (print input)
