@@ -103,12 +103,13 @@
       (let [ pos (returnposition (first pat) input start)]
         (if (false? pos)
           fail
-          (let [b2 (pat-match pat (subseq1 input pos) bindings)]
+          (let [b2 (pat-match pat
+                              (subseq1 input pos)
+                              (match-variable var (subseq2 input 0 pos) bindings))]
             ;;if this match failed,try another longer one
-            ;;if it worked, check that the variables match
             (if (= b2 fail)
               (segment-match pattern input bindings (+ pos 1))
-              (match-variable var (subseq2 input 0 pos) b2))))))))
+              b2)))))))
 
 
 (defn subseq2 [input start end]
@@ -147,10 +148,15 @@
 
 (defn match-variable [var input bindings]
   ;Does VAR match input? Uses (or updates) and returns bindings.
-  (let [binding (get-binding var bindings)] (print var) (print input)
+  (let [binding (get-binding var bindings)]; (print var) (print input)
     (cond
-      (not binding) (if (list? var) (extend-bindings (first var) input bindings)
-                        (extend-bindings var input bindings))
+      (not binding) (if (list? var)
+                      (extend-bindings (first var)
+                                       (if (list? input) input (list input))
+                                       bindings)
+                      (extend-bindings var
+                                       (if (list? input) input (list input)) 
+                                       bindings))
       (or (= input (binding-val binding)) (= (list input) (binding-val binding)))
       bindings
       :else fail)))
