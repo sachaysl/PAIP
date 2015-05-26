@@ -11,10 +11,21 @@
     (and (simple-equal (first x) (first y))
          (simple-equal (rest x) (rest y)))))
 
+;(defn variable-p [x]
+  ;; is x a variable (a symbol beginning with '?')?
+ ; (and (symbol? x) (.startsWith (name x) "?")))
+
 (defn variable-p [x]
-  ; is x a variable (a symbol beginning with '?')?
-  (and (symbol? x) (.startsWith (name x) "?")))
-      
+  (if (and (list? x) (unarylength? x))
+    (and (symbol? (first x)) (.startsWith (name (first x)) "?"))
+    (and (symbol? x) (.startsWith (name x) "?"))))
+
+(defn unarylength? [x]
+  (if (= (rest x) ()) true false))
+
+(def rest1 [x]
+  (if (= (rest (rest x)) ()) (first (rest x)) (rest x)))
+
 
 (defn pat-match0 [pattern input]
   (if (variable-p pattern)
@@ -55,6 +66,7 @@
 
 ;note to self: lookup gives error if var doesn't exist (look at get-binding function)
 
+
 (defn extend-bindings [var val bindings]
   ;Add a (var value) pair to a binding list.
   (cons (cons var (list val)) bindings))
@@ -62,23 +74,32 @@
 (defn pat-match [pattern input bindings];&{:keys [bindings] :or {bindings no-bindings}}]
   ;print bindings Note, need to make bindings an optional argument here
   ;(pat-match 'hey 'hey :bindings '((?X vacation)))
-  (cond ((= bindings fail) fail)
-        ((variable-p pattern)
-         (match-variable pattern input bindings))
-        ((= pattern input) bindings) ;consp in clojure???? use seq?
-        ((and (seq pattern) (seq input))
+  (cond
+    (= bindings fail) fail
+    (variable-p pattern) (match-variable pattern input bindings)
+    (= pattern input) bindings
+    (and (list? pattern) (list? input))
          (pat-match (rest pattern) (rest input)
                     (pat-match (first pattern) (first input) bindings))
-         (true fail))))
-
-(defn match-variable (var input bindings)
+         :else fail))
+(defn match-variable [var input bindings]
   ;Does VAR match input? Uses (or updates) and returns bindings.
-  (let [binding (get-binding var bindings)]
-    (cond ((not binding) (extend-bindings var input bindings))
-          ((= input (binding-val binding)) bindings)
-          (true fail))))
+  (let [binding (get-binding var bindings)] (print var) (print input)
+    (cond
+      (not binding) (if (list? var) (extend-bindings (first var) input bindings)
+                        (extend-bindings var input bindings))
+      (or (= input (binding-val binding)) (= (list input) (binding-val binding)))
+      bindings
+      :else fail)))
+;POSSIBLE BUG HERE, BINDING-VAL BINDING RETURNS A LIST, INPUT COULD BE JUST A VALUE SO    COULD BE COMPARING (HEY) AND HEY, AND GET A FALSE, EVEN THOUGH WE WANT THEM TO MATCH
+                                        ;CHECK THE LISP IMPLEMENTATION TO SEE IF THIS IS CONSISTENT OR NOT.
+;This is indeed a problem, sorted it with a quick hack to check input and (list input)
+;against the value returned by binding-val binding. Should change this to check if input
+;is a list and if not make it a list and then compare with value returned from
+;binding-val binding to avoid any unwanted side effects.
 
-         
+
+
 (defn pat-match1 [pattern input]
   (if (variable-p pattern)
      ;the second argument to cons must be a list in clojure
