@@ -329,3 +329,63 @@
          (Do you feel strongly about discussing such things?))))
 
 
+   ;"Finally we are ready to implement Eliza proper. The main program should be
+   ;a loop that reads input, transforms it, and prints the result. Transformation is
+   ;done primarily by finding some rule such that its pattern matches the input,
+   ;and then substituting the variables into the rule's responses.
+
+
+(defn eliza []
+  ;Respond to user input using pattern matching rules.
+  (while true
+    (print 'eliza>)
+    (pprint (flatten (use-eliza-rules (read-line))))))
+
+(defn use-eliza-rules [input]
+  ;find some rule with which to transform the input
+  (some (fn [rule]
+          (let [result (pat-match (rule-pattern rule) input '((t t)))]
+            (if (not ( = result fail))
+              (sublis (switch-viewpoint result)
+                      (random-elt (rule-responses rule))))))
+        *eliza-rules*))
+;(clojure.string/replace '(what would it mean to you if you got a ?X ?) "?X" "vacation")
+
+(defn sublis [substitutes sentence]
+  (loop [sentence sentence
+         substitutes substitutes]
+    (if (= nil substitutes)
+      sentence
+      (recur (clojure.string/replace sentence
+                                     (stringify (first (first substitutes)))
+                                     (stringify (second (first substitutes))))
+             (seq (rest substitutes))))))
+
+(defn switch-viewpoint [words] ;change I to you and vice versa. and so on
+  (sublis '((I You) (you I) (me you) (am Are) (are am))
+          words))
+
+
+(defn stringify [input] ;take a symbol or list and return a string 
+  (if (list? input)
+    (clojure.string/join " " input)
+    (clojure.string/join " " (list input))))
+
+(defn random-elt [choices] ;choose an element from a list at random
+  (elt choices (rand-int (length choices))))
+
+(defn length [choices] ; returns length of list
+  (loop [choices choices
+         tlength 0]
+    (if (= nil choices)
+      tlength
+      (recur (seq (rest choices))
+             (+ tlength 1)))))
+
+(defn elt [choices number]
+  (loop [choices choices
+         number number]
+         (if (= number 0)
+           (first choices)
+           (recur (seq (rest choices))
+                  (- number 1)))))
