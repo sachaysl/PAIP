@@ -202,7 +202,8 @@
 (defn rule-responses [rule]
   (rest rule))
 
-(def *eliza-rules*
+
+(def ^:dynamic  *eliza-rules* ;dynamic vs not dynamic?
   '((((?* ?x) hello (?* ?y))
      (How do you do.  Please state your problem.))
     (((?* ?x) computer (?* ?y))
