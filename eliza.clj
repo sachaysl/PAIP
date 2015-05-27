@@ -374,6 +374,7 @@
 (defn random-elt [choices] ;choose an element from a list at random
   (elt choices (rand-int (length choices))))
 
+
 (defn length [choices] ; returns length of list
   (loop [choices choices
          tlength 0]
