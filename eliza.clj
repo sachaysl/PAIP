@@ -341,8 +341,8 @@
   ;Respond to user input using pattern matching rules.
   (while true
     (print 'eliza>)
-    (print (use-eliza-rules (read)))))
-                                        ;should pretty print and flatten here (see norvig)
+    (println (use-eliza-rules (read)))))
+ ;should pretty print and flatten here (see norvig)
 
 
 
@@ -354,7 +354,7 @@
           (let [result (pat-match (rule-pattern rule) input '((t t)))]
             (print result)
             (if (not (= result fail))
-              (sublis result ;SHOULD BE (sublis (switch-viewpoint result))
+              (sublis1 (switch-viewpoint result)
                       (random-elt (rule-responses rule))))))
         *eliza-rules*))
 ;(clojure.string/replace '(what would it mean to you if you got a ?X ?) "?X" "vacation")
@@ -372,15 +372,13 @@
 
 
 
-;BUG BELOW (switch viewpoint) --> words is a list of list pairs,our sublis does not handle those yet, invent new function
-;FIGURE OUT WHY READ BUFFER ISN'T WORKING PROPERLY (RESTART REPL)
-;nb disable switch-viewpoint method in use-eliza-rules for the time being
+
 
 (defn switch-viewpoint [words] ;change I to you and vice versa. and so on
   (sublis1 '((I You) (you I) (me you) (am Are) (are am))
           words))
 
-(defn sublis1 [substitutes pairlists]
+(defn sublis1 [substitutes pairlists] ;second item of each pair is a 1 element list
   (loop [pairlists pairlists
          substitutes substitutes]
     (if (= nil substitutes)
@@ -419,4 +417,4 @@
 
 ; start program by typing (eliza)
 ; make sure you put brackets around everthing you say
-;press enter to submit
+; type return character to submit
