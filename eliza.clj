@@ -23,22 +23,22 @@
 (defn unarylength? [x]
   (if (= (rest x) ()) true false))
 
-(def rest1 [x]
-  (if (= (rest (rest x)) ()) (first (rest x)) (rest x)))
+;(def rest1 [x]
+;  (if (= (rest (rest x)) ()) (first (rest x)) (rest x)))
 
 
-(defn pat-match0 [pattern input]
-  (if (variable-p pattern)
-     ;the second argument to cons must be a list in clojure
-    (if (list? input) (cons pattern input) (cons pattern (list input)))
-    (if  (or (or (single-valued? pattern) (= () pattern)) (or (single-valued? input) (= () input)))
-      (= pattern input)
-      (concat (pat-match0 (first pattern) (first input))
-           (pat-match0 (rest pattern) (rest input))))))
+;(defn pat-match0 [pattern input]
+ ; (if (variable-p pattern)
+  ;   ;the second argument to cons must be a list in clojure
+   ; (if (list? input) (cons pattern input) (cons pattern (list input)))
+    ;(if  (or (or (single-valued? pattern) (= () pattern)) (or (single-valued? input) (= ;() input)))
+ ;     (= pattern input)
+  ;    (concat (pat-match0 (first pattern) (first input))
+   ;        (pat-match0 (rest pattern) (rest input))))))
     
 ;(clojure.string/replace '(what would it mean to you if you got a ?X ?) "?X" "vacation") the above is an attempt to find an equaivalent of sublis in clojure. The replace function
 ; works but requires the match and the replacement to be strings.
-
+ 
 (def ^:const fail false ) ;indicates pat-match failure
 
 (def ^:const no-bindings '((true true))) ;indicates pat-match success with no variables
@@ -47,7 +47,8 @@
  ;Find a (variable value) pair in a binding list
   (assoc1 var bindings))
 
-;assoc behaves differently in clojure than in common lisp so have to implement it ourselves
+                                        ;assoc behaves differently in clojure than in common lisp so have to implement it ourselves
+
 (defn assoc1 [var bindings]
    (loop [var var
           bindings bindings]
@@ -59,7 +60,7 @@
 (defn binding-val [binding]
   ;Get the value part of a single binding
   (rest binding))
-
+ 
 (defn lookup [var bindings]
   ;Get the value part (for var) from a binding list.
   (binding-val (get-binding var bindings)))
@@ -169,14 +170,14 @@
 
 
 
-(defn pat-match1 [pattern input]
-  (if (variable-p pattern)
-     ;the second argument to cons must be a list in clojure
-    (cons1 pattern input)
-    (if  (or (atom1 pattern) (atom1 input))
-      (= pattern input)
-      (concat (pat-match1 (first pattern) (first input))
-           (pat-match1 (rest pattern) (rest input))))))
+;(defn pat-match1 [pattern input]
+ ; (if (variable-p pattern)
+   ;  ;the second argument to cons must be a list in clojure
+  ;  (cons1 pattern input)
+    ;(if  (or (atom1 pattern) (atom1 input))
+     ; (= pattern input)
+      ;(concat (pat-match1 (first pattern) (first input))
+       ;    (pat-match1 (rest pattern) (rest input))))))
 
 (defn atom1 [pattern]
   (or (single-valued? pattern) (= () pattern)))
@@ -335,19 +336,25 @@
    ;done primarily by finding some rule such that its pattern matches the input,
    ;and then substituting the variables into the rule's responses.
 
-
+ 
 (defn eliza []
   ;Respond to user input using pattern matching rules.
   (while true
     (print 'eliza>)
-    (pprint (flatten (use-eliza-rules (read-line))))))
+    (print (use-eliza-rules (read)))))
+                                        ;should pretty print and flatten here (see norvig)
+
+
+
+
 
 (defn use-eliza-rules [input]
   ;find some rule with which to transform the input
   (some (fn [rule]
           (let [result (pat-match (rule-pattern rule) input '((t t)))]
-            (if (not ( = result fail))
-              (sublis (switch-viewpoint result)
+            (print result)
+            (if (not (= result fail))
+              (sublis result ;SHOULD BE (sublis (switch-viewpoint result))
                       (random-elt (rule-responses rule))))))
         *eliza-rules*))
 ;(clojure.string/replace '(what would it mean to you if you got a ?X ?) "?X" "vacation")
@@ -362,9 +369,27 @@
                                      (stringify (second (first substitutes))))
              (seq (rest substitutes))))))
 
+
+
+
+;BUG BELOW (switch viewpoint) --> words is a list of list pairs,our sublis does not handle those yet, invent new function
+;FIGURE OUT WHY READ BUFFER ISN'T WORKING PROPERLY (RESTART REPL)
+;nb disable switch-viewpoint method in use-eliza-rules for the time being
+
 (defn switch-viewpoint [words] ;change I to you and vice versa. and so on
-  (sublis '((I You) (you I) (me you) (am Are) (are am))
+  (sublis1 '((I You) (you I) (me you) (am Are) (are am))
           words))
+
+(defn sublis1 [substitutes pairlists]
+  (loop [pairlists pairlists
+         substitutes substitutes]
+    (if (= nil substitutes)
+      pairlists
+      (recur (clojure.string/replace pairlists
+                                     (stringify (first (first substitutes)))
+                                     (stringify (first (second (first substitutes)))))
+             (seq (rest substitutes))))))
+      
 
 
 (defn stringify [input] ;take a symbol or list and return a string 
@@ -391,3 +416,7 @@
            (first choices)
            (recur (seq (rest choices))
                   (- number 1)))))
+
+; start program by typing (eliza)
+; make sure you put brackets around everthing you say
+;press enter to submit
